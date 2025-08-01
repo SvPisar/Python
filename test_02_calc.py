@@ -1,31 +1,30 @@
+import pytest
 from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+from calculator_page import CalculatorPage
 
 
-def test_calculator():
+@pytest.fixture
+def driver():
     driver = webdriver.Chrome()
-    url = (
-        "https://bonigarcia.dev/selenium-webdriver-java/slow-calculator.html"
-    )
-    driver.get(url)
-
-    # Установка задержки
-    delay_input = driver.find_element(By.CSS_SELECTOR, "#delay")
-    delay_input.clear()
-    delay_input.send_keys("45")
-
-    # Нажатие кнопок
-    driver.find_element(By.XPATH, "//span[text()='7']").click()
-    driver.find_element(By.XPATH, "//span[text()='+']").click()
-    driver.find_element(By.XPATH, "//span[text()='8']").click()
-    driver.find_element(By.XPATH, "//span[text()='=']").click()
-
-    # Ожидание результата
-    result = WebDriverWait(driver, 46).until(
-        EC.text_to_be_present_in_element((By.CSS_SELECTOR, ".screen"), "15")
-    )
-    assert result, "Результат не равен 15"
-
+    driver.implicitly_wait(10)
+    yield driver
     driver.quit()
+
+
+def test_calculator_with_delay(driver):
+    # Инициализация Page Object
+    calculator = CalculatorPage(driver)
+
+    # 1. Открыть страницу калькулятора
+    calculator.open_page(
+        "https://bonigarcia.dev/selenium-webdriver-java/slow-calculator.html")
+
+    # 2. Ввести значение 45 в поле задержки
+    calculator.set_delay("45")
+
+    # 3. Выполнить операцию: 7 + 8 =
+    calculator.calculate("7+8=")
+
+    # 4. Проверить результат через 45 секунд
+    calculator.wait_for_result("15")
+    assert calculator.get_result() == "15"
